@@ -19,7 +19,7 @@ contract ERC721 is Context, ERC165, IERC721 {
     using SafeMath for uint;
     using Address for address;
     using Counters for Counters.Counter;
-    using BokkyPooBahsDateTimeContract for addDays;
+    //using BokkyPooBahsDateTimeContract for addDays;
 
     // Equals to `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`
     // which can be also obtained as `IERC721Receiver(0).onERC721Received.selector`
@@ -38,7 +38,7 @@ contract ERC721 is Context, ERC165, IERC721 {
     mapping (address => mapping (address => bool)) private _operatorApprovals;
     mapping (address => bool) userAddr;
     mapping (uint256 => animalobj) liste_animal;
-    mapping(address=> int) public argent_compte;
+    mapping(address=> uint) public argent_compte;
     mapping(address => bool) is_Challenged;
     mapping(uint256 => challenge) liste_challenges;
     
@@ -47,6 +47,9 @@ contract ERC721 is Context, ERC165, IERC721 {
         userAddr[user] = authorized;
         argent_compte[user] = 0;
 
+    }
+    fuction deposit () payable {
+        argent_compte[_msgSender()] += msg.value;
     }
     function isRegistered(address user) public view returns(bool){
         return userAddr[user];
@@ -100,19 +103,21 @@ contract ERC721 is Context, ERC165, IERC721 {
         
 
     }
-    function proposeToFight(uint256 challenger1, uint256 defender1,int stake1,uint256 numero_combat) public{
+    function proposeToFight(uint256 challenger1, uint256 defender1,uint stake1,uint256 numero_combat) public{
         address owner1 = ownerOf(challenger1);
         address owner2 = ownerOf(defender1);
 
         require(owner1==_msgSender(),"The message sender is not the owner of the challenger animal");
-        /* Je ne comprends pas pourquoi je ne peux pas utiliser >=
-        require(argent_compte(owner1)>=stake1,"The challenger does not have enough money");
-        */
+        /* Je ne comprends pas pourquoi je ne peux pas utiliser >=*/
+        require(argent_compte[owner1]>=stake1,"The challenger does not have enough money");
+    
         liste_challenges[numero_combat].challenger = challenger1;
         liste_challenges[numero_combat].defender = defender1;
         liste_challenges[numero_combat].stake = stake1;
         liste_challenges[numero_combat].challenger_own = owner1;
         liste_challenges[numero_combat].defender_own = owner2;
+
+        
 
 
 
@@ -123,17 +128,19 @@ contract ERC721 is Context, ERC165, IERC721 {
 
     }
     function AgreeToFight(uint256 numero_combat) public {
-        //address owner1 = liste_challenges[numero_combat].challenger_own;
+        address owner1 = liste_challenges[numero_combat].challenger_own;
         address owner2 = liste_challenges[numero_combat].defender_own;
 
         require(owner2==_msgSender(),"The message sender is not the owner of the challenged animal");
-        /* Je ne comprends pas pourquoi je ne peux pas utiliser d'operateur
-        require(argent_compte(owner2)>=liste_challenges[numero_combat].stake,"The challenger does not have enough money");
-        */
+        /* Je ne comprends pas pourquoi je ne peux pas utiliser d'operateur*/
+        require(argent_compte[owner2]>=liste_challenges[numero_combat].stake,"The challenger does not have enough money");
+        
         liste_challenges[numero_combat].authorisation_defender = true;
-       // msg.value = msg.value - liste_challenges[numero_combat].stake;
-        /*argent_compte(owner1) = argent_compte(owner1)-liste_challenges[numero_combat].stake;
-        liste_challenges[numero_combat].stake = 4;
+        argent_compte[owner1] = argent_compte[owner1]-liste_challenges[numero_combat].stake;
+        argent_compte[owner2] = argent_compte[owner2]-liste_challenges[numero_combat].stake;
+
+        
+        
         */
 
     }
@@ -149,7 +156,7 @@ contract ERC721 is Context, ERC165, IERC721 {
         address auctioneer = ownerOf(tokenId1);
         require(auctioneer==_msgSender(),"The message sender is not the owner of the animal"); 
         liste_auction[no_auction].startBlock = start_auction;
-        liste_auction[no_auction].endBlock = addDays(2);
+        liste_auction[no_auction].endBlock = startBlock + 2 days;
         liste_auction[no_auction].tokenId = tokenId1;
 
 
